@@ -41,6 +41,10 @@ class TransparentWindow(QWidget):
         self.id = self_id
         self.windows[id] = (x,y,width,height)
 
+    def delete_window(self,id):
+        if id in self.windows:
+            self.windows.pop(id) 
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.velocity[1] = -15  # Jump velocity

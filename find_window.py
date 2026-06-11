@@ -21,6 +21,8 @@ def listen_for_window_changes(mascot):
         if event.type == X.CreateNotify and self_id == None:
             self_id = event.window.id
             continue
+        if event.type == X.DestroyNotify:
+            mascot.delete_window(event.window.id)
         if event.type == X.ConfigureNotify and event.window.id != self_id:
             mascot.check_if_inside(event.window.id, event.x,event.y,event.width,event.height,self_id)
 
