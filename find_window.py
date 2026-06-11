@@ -11,29 +11,25 @@ root.change_attributes(event_mask=(
     X.PropertyChangeMask         # window properties changed
 ))
 
-print("Listening for window changes...")
-
-windows = {}  # current state
+self_id = None
 
 def listen_for_window_changes(mascot):
+    global self_id
+    print("Listening for window changes...")
     while True:
-        # This BLOCKS until an event happens — no CPU waste
         event = d.next_event()
-
-        if event.type == X.ConfigureNotify:
-            # A window moved or resized
-            mascot.check_if_inside(event.window.id, event.x,event.y,event.width,event.height)
-            #print(f"Window moved/resized: {event.window.id:#x} ")
-            #    f"→ pos=({event.x},{event.y}) "
-            #    f"size={event.width}x{event.height}")
+        if event.type == X.CreateNotify and self_id == None:
+            self_id = event.window.id
+            continue
+        if event.type == X.ConfigureNotify and event.window.id != self_id:
+            mascot.check_if_inside(event.window.id, event.x,event.y,event.width,event.height,self_id)
 
 
-# Get all children windows (all windows on screen)
 def get_all_windows_pos():
     tree = root.query_tree()
-    all_windows = {}  # id → (x,y,width,height)
+    all_windows = {}  # id -> (x,y,width,height)
 
-   #This for loop return all the windows for the back to the front of the screen
+    #This for loop return all the windows for the back to the front of the screen
     for _, window in enumerate(tree.children):
         try:
             geo = window.get_geometry()
@@ -41,5 +37,4 @@ def get_all_windows_pos():
                 all_windows[window.id] = ((geo.x,geo.y,geo.width,geo.height))
         except Exception:
             pass  # some windows may be inaccessible
-
     return all_windows

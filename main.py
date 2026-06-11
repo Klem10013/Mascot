@@ -12,86 +12,99 @@ import threading
 class TransparentWindow(QWidget):
     def __init__(self,app : QApplication):
         self.screen_size = app.primaryScreen().size()
-        self.x = 1000
-        self.y = 200
+        self._x = 1000
+        self._y = 200
         self.width = 50
         self.height = 50
         self.velocity = [0,0]
         self.vitesse = 5
+        self.can_jump = True
         self.windows = get_all_windows_pos()
         super().__init__()
+        self.id = None
         self.setAttribute(Qt.WA_TranslucentBackground)  # Key line
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.resize(self.width, self.height)
-        self.move(self.x,self.y)
+        self.move(self._x,self._y)
+        self.setMouseTracking(True)  # Enable mouse tracking to get mouse move events
+
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Draw a red rectangle — background stays transparent
         painter.setBrush(QColor("red"))
         painter.setPen(Qt.NoPen)
         painter.drawRect(0, 0, 50, 50)
 
-    def check_if_inside(self,id,x,y,width,height):
+    def check_if_inside(self,id,x,y,width,height,self_id):
+        self.id = self_id
         self.windows[id] = (x,y,width,height)
 
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.velocity[1] = -15  # Jump velocity
+
     def apply_collision(self):
-        for (x,y,width,height) in self.windows.values():
-            if self.x <= x + width and self.x + self.width > x and self.y <= y +height and self.y+self.height >= y:
-                if self.x + self.width > x + width:
-                    self.velocity[0] += x + width - self.x
-                elif self.x < x:
-                    self.velocity[0] += x - (self.x+self.width)
-                elif self.y + self.height > y + height:
-                    self.velocity[1] += y + height - self.y
-                elif self.y < y:
-                    self.velocity[1] += y - (self.y+self.height)
+        for (id,(x,y,width,height)) in self.windows.items():
+            if id == self.id:
+                continue
+            if self._x <= x + width and self._x + self.width > x and self._y <= y +height and self._y+self.height >= y:
+                if self._x + self.width > x + width:
+                    self.velocity[0] += x + width - self._x
+                elif self._x < x:
+                    self.velocity[0] += x - (self._x+self.width)
+                elif self._y + self.height > y + height:
+                    self.velocity[1] += y + height - self._y
+                elif self._y < y:
+                    self.velocity[1] += y - (self._y+self.height)
             
     def gravity(self):
-        if self.y + self.height < self.screen_size.height():
+        if self._y + self.height < self.screen_size.height():
             self.velocity[1] += 1
         
 
     def apply(self):
-        self.x += self.velocity[0]
-        self.y += self.velocity[1]
-        if self.y <= 0 :
-            self.y = 32
+        self._x += self.velocity[0]
+        self._y += self.velocity[1]
+        if self._y <= 0 :
+            self._y = 32
             self.velocity[1] = 0
-        if self.x < 0:
-            print("Here")
-            self.x = 0
+        if self._x < 70:
+            self._x = 70
             self.velocity[0] = 0
-        if self.y + self.height >= self.screen_size.height():
-            self.y = self.screen_size.height() - self.height
+        if self._y + self.height >= self.screen_size.height():
+            self._y = self.screen_size.height() - self.height
+            self.can_jump = True
             self.velocity[1] = 0
-        if self.x + self.width >= self.screen_size.width():
-            self.x = self.screen_size.width() - self.width
+        if self._x + self.width >= self.screen_size.width():
+            self._x = self.screen_size.width() - self.width
             self.velocity[0] = 0
 
         drag = 1/100 * self.velocity[0]**2
         if self.velocity[0] > 0:
             self.velocity[0] =  int(self.velocity[0] - drag)
-            #if self.velocity[0] < 0:
-            #    self.velocity[0] = 0
+            if self.velocity[0] < 0:
+                self.velocity[0] = 0
         elif self.velocity[0] < 0:
             self.velocity[0] = int(self.velocity[0] + drag)
             if self.velocity[0] > 0:
                 self.velocity[0] = 0
-        self.move(self.x,self.y)
+        self.move(self._x,self._y)
 
     def follow_cursor(self):
         pos = QCursor.pos()
-        print(pos.x(),self.x,self.x - self.vitesse*2, self.x + self.vitesse*2)
-        if (self.x + self.vitesse*2) < pos.x():
-            print("less")
+        #print(pos.x(),self._x,self._x - self.vitesse*2, self._x + self.vitesse*2)
+        #print(self.velocity)
+        d = abs(self._x - pos.x())
+        if (self._x + self.vitesse*2) < pos.x():
             self.velocity[0] += self.vitesse
-        elif (self.x - self.vitesse*2) > pos.x():
-            print("more")
+        elif (self._x - self.vitesse*2) > pos.x():
             self.velocity[0] -= self.vitesse
-        print(self.velocity)
+        if d > self.vitesse*30 and self.can_jump:
+            self.can_jump = False     
+            self.velocity[1] -= 15
+        #print(self.velocity)
 
     def mainLoop(self):
         while True:
