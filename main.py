@@ -27,15 +27,23 @@ class TransparentWindow(QWidget):
         self.resize(self.width, self.height)
         self.move(self._x,self._y)
         self.setMouseTracking(True)  # Enable mouse tracking to get mouse move events
+        self.color = [255,0,0]
+        self._i = 0
 
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        painter.setBrush(QColor("red"))
+        painter.setBrush(QColor(self.color[0],self.color[1],self.color[2]))
         painter.setPen(Qt.NoPen)
         painter.drawRect(0, 0, 50, 50)
+        if self.color[self._i] == 0:
+            self._i = (self._i + 1) %3
+        else:
+            self.color[self._i] -= 1
+            self.color[(self._i+1)%3] += 1
+
 
     def check_if_inside(self,id,x,y,width,height,self_id):
         self.id = self_id
@@ -46,7 +54,8 @@ class TransparentWindow(QWidget):
             self.windows.pop(id) 
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton and self.can_jump:
+            self.can_jump = False
             self.velocity[1] = -15  # Jump velocity
 
     def apply_collision(self):
@@ -101,7 +110,7 @@ class TransparentWindow(QWidget):
         #print(pos.x(),self._x,self._x - self.vitesse*2, self._x + self.vitesse*2)
         #print(self.velocity)
         d = abs(self._x - pos.x())
-        if (self._x + self.vitesse*2) < pos.x():
+        if (self._x + self.vitesse*2) < pos.x() - self.width:
             self.velocity[0] += self.vitesse
         elif (self._x - self.vitesse*2) > pos.x():
             self.velocity[0] -= self.vitesse
@@ -116,6 +125,7 @@ class TransparentWindow(QWidget):
             self.apply_collision()
             self.follow_cursor()
             self.apply()
+            self.paintEvent()
             time.sleep(0.02)  # Sleep to reduce CPU usage
 
 
