@@ -58,12 +58,6 @@ class TransparentWindow(QWidget):
         for line in adding:
             painter.drawLine(int(line[0]+self.width//2),int(line[1]+self.height//2),int(line[2]+self.width//2),int(line[3]+self.height//2))
 
-        #painter.drawRect(0, 0, 50, 50)
-        #if self.color[self._i] == 0:
-        #    self._i = (self._i + 1) %3
-        #else:
-        #    self.color[self._i] -= 1
-        #    self.color[(self._i+1)%3] += 1
 
 
     def check_if_inside(self,id,x,y,width,height,self_id):
